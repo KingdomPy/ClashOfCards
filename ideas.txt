@@ -1,0 +1,81 @@
+Ship Types:
+Valour, Wisdom, Vanguard
+
+Valour: +3 str, per level
+Wisdom: +3 int, per level
+Vangaurd: +3 agi, per level
+
+Emblem:
+Emblem level 1: +1 stat chosen per level
+Emblem level 2: +1 stat chosen per 2 levels
+
+Max level 60 [15 in beta]
+
+Stats:
+Strength: +0.2 attack, +0.5 hp, 0.1% block                        6|12|36 attack 10|30|90 hp    4.5|9|18 block(%)
+Intelligence: +0.3 power, + 0.1 mana				  9|18|54 power  3|6|18 mana
+Agility: +0.1 attack, +0.1 crit chance, +0.1% speed               3|6|18  attack/ crit rate(%)/ movement speed
+
+Main skill tree:
+level 1: Surge[attack]
+
+level 3: Dodge[back-command] +10 hp
+
+level 5: Shotgun[attack], Combo[command], +2 attack
+
+level 8: Missile[command], Guard[back-command] +2 attack
+
+level 11: orbit[command] +10 power
+
+level 15: +10% speed, 10% crit cahnce
+
+Stat bonus tree:
+level 2: +5 str, +5 int, +5 agi
+level 4: +10 str, +5 agi
+level 6: +20 int
+level 7: +10 agi
+level 9: +5 str, +5 int, +5 agi
+level 10: +10 agi, +5 int
+level 12: +5 str
+level 13: +5 str, +5 int
+level 14: +5 agi
+level 15: +20 int, +20 agi, +10 str
+
+valour skill tree:
+level 2: Shotgun[attack]
+
+level 4: Machine gun[attack]
+
+level 5: Bullet barrier[command]
+
+level 7: Enhance[command] #enhance basic attack damage
+
+level 11: Light Dash[back-command], Charge[command]
+
+level 15: Judgement[command] #enhance attack speed
+
+wisdom skill tree:
+level 2: Curse[back-command]
+
+level 4: Electrocute[command]
+
+level 5: Teleport[command]
+
+level 7: Repair[command]
+
+level 11: Final flash[command]
+
+level 15: barrier[back-command]
+
+vanguard skill tree:
+level 2: Dodge[back-command]
+
+level 4: Rapid fire[command]
+
+level 5: Snipe[command]
+
+level 7: Super dodge[back-command]
+
+level 11: Machine gun[attack], Shift[command] #enhance speed and attack speed
+
+level 15: Second chance[passive]

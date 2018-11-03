@@ -1,94 +1,158 @@
-#pygame server
+import socket, _thread, json
+import pygame.time, time
+from math import pi
+import clashClasses
 
-import math, time
-import socket, sys, _thread
-
-global CONNECTED_CLIENTS
-global LOBBIES
+SERVER_IP = socket.gethostbyname(socket.gethostname())
+SERVER_PORT = 8080
 
 class server:
 
-    def __init__(self, bind_ip, bind_port):
-                        
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((bind_ip, bind_port))
-        self.server.listen(10)
-
-        print("[*] Listening on {}:{}".format(bind_ip, bind_port))
-
-        for i in range(0, len(LOBBIES)):
-            _thread.start_new_thread(self.threaded_lobby, (LOBBIES[i],))
+    def __init__(self, ip, port):
+        #Addresses connected
+        self.clients = []
+        self.authenticating = []
+        self.authData = []
         
-        while True:
-            if len(CONNECTED_CLIENTS) < 10:
-                
-                client, address = self.server.accept()
-                print("[+] {} is attempting to connect.".format(address))
-                
-                self.joinRoom(client,address)
-                CONNECTED_CLIENTS.append(address)
-                print("[+] {} has connected.".format(address))
-
-    def threaded_lobby(self, lobby):
-        while True:
-            time.sleep(0.033)
-            lobby.update()
-
-
-    def joinRoom(self, client, address):
-        for i in range (0, len(LOBBIES)):
-            if LOBBIES[i].join(client, address):
-                return i
+        #Data on addresses connected
+        self.clientsData = []
+        
+        #Address of those who have sent data
+        self.recvPackets = []
+        
+        #Data to send to all the connected addresses
+        self.sendPackets = []
+        
+        #Track inactive users
+        self.inactive = []
+        self.clock = []
             
-class lobby:
-    
-    def __init__(self, size):
-        self.size = size
-        self.CLIENTS = []
+        self.udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udpSocket.bind((ip,port))
+        
+        self.tcpSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcpSocket.bind((ip,port))
+        self.tcpSocket.listen(1)
 
-    def join(self, client, address):
-        if len(self.CLIENTS) < self.size:
-            self.CLIENTS.append(client)
-            _thread.start_new_thread(self.threaded_client, (client,address,))
-            return 1
-        else:
-            return 0
+        print("UDP & TCP server on {}:{}".format(ip, port))
 
-    def threaded_client(self, client, address):
-        client.send(str.encode("Connection successful."))
+        _thread.start_new_thread(self.udp_thread, ())
+        _thread.start_new_thread(self.tcp_thread, ())
+
+
+
+    def udp_thread(self):
+        _thread.start_new_thread(self.udp_network_thread, ())
         while True:
             try:
-                active = client.recv(1024)
-                if not active:
-                    break
-                client.sendall(str.encode("\n"))
-            except:
-                break
-        CONNECTED_CLIENTS.remove(address)
-        self.leave(client)
-        print("[-] {} has disconnected.".format(address))
-        client.close()
-    
-    def leave(self, client):
-        self.CLIENTS.remove(client)
+                data, address = self.udpSocket.recvfrom(24)
+                if address in self.clients:
+                    #See if the server has caught their input
+                    if not(address in self.recvPackets):
+                        self.recvPackets.append(address)
+                        #Compute data
+                        data = self.returnInput(data, address)
+                        self.sendPackets.append(data)
+     
+                    #Check if player was inactive
+                    if address in self.inactive:
+                        self.clock.pop(self.inactive.index(address))
+                        self.inactive.remove(address)
 
-    def update(self):
-        inputs = []
-        for i in range (0, self.size):
-            try:
-                inputs.append((self.CLIENTS[i].recv(1024)).decode())
-                
-            except:
-                inputs.append("")
-                continue
-                
-        for i in range(0, len(self.CLIENTS)):
-            try:
-                self.CLIENTS[i].sendall(str(inputs).encode())
+                if data.decode() in self.authenticating:
+                    location = self.authenticating.index(data.decode())
+                    self.clients.append(address)
+                    self.clientsData.append(self.authData[location])
+                    self.authenticating.pop(location)
+                    self.authData.pop(location)
+                    
             except:
                 continue
+
+    def tcp_thread(self):
+        while True:
+            client, address = self.tcpSocket.accept()
+            if not(address in self.clients or address in self.authenticating):
+                _thread.start_new_thread(self.tcp_client_thread, (client, address))
+            else:
+                client.close()
+        self.tcpSocket.close()
+
+    def udp_network_thread(self):
+        while True:
+            pygame.time.delay(16)
+            pointer = 0
+            #check for data not sent by players
+            self.orderPackets()
+            #check for inactive players
+            for i in range (0, len(self.clients)):
+                try:
+                    if not(self.clients[i] in self.recvPackets):
+                        if not(self.clients[i] in self.inactive):
+                            self.inactive.append(self.clients[i])
+                            self.clock.append(0)
+                        clock = self.inactive.index(self.clients[i])
+                        self.clock[clock] += 1
+                        if self.clock[clock] > 32:
+                            self.removeClient(self.clients[i])
+                except:
+                    continue
+
+            while pointer < len(self.clients) and not(self.sendPackets == []):
+                try:
+                    #update the players
+                    self.udpSocket.sendto(str(self.sendPackets).encode(), self.clients[pointer])
+                    pointer += 1
+      
+                except:
+                    continue
+            
+            self.recvPackets = []
+            self.sendPackets = []
+
+    def tcp_client_thread(self, client, address):
+        client.settimeout(2)
+        data = client.recv(128)
+        try:
+            self.createPlayer(data)
+            client.send(str(address).encode())
+            print(address, "has connected")
+            self.authenticating.append(str(address))
+        except:
+            client.send("0".encode())
+            
+    def createPlayer(self, data):
+        data = json.loads(data.decode())
+        self.authData.append(clashClasses.server_player(200, 200, pi/2, data[0], data[1]))     
         
-CONNECTED_CLIENTS = []
-LOBBIES = [lobby(2)] * 3
+    def removeClient(self, address):
+        print(address, "has disconnected")
+        self.clientsData.pop(self.clients.index(address))
+        self.clients.remove(address)
+        self.clock.pop(self.inactive.index(address))
+        self.inactive.remove(address)
+        
+    def returnInput(self, data, address):
+        data = json.loads(data.decode())
+        player = self.clients.index(address)
+        try:
+            #a[0]/d[1]/w[2]/s[3]
+            if data[0]:
+                self.clientsData[player].rotate(-0.12)
+            if data[1]:
+                self.clientsData[player].rotate(+0.12)
+            if data[2]:
+                self.clientsData[player].moveForward()
 
-runServer = server("",8888)
+            return self.clientsData[player].getData()
+ 
+        except:
+            pass
+
+    def orderPackets(self):
+        if len(self.clients) > len(self.recvPackets):
+            for i in range(0, len(self.clients)):
+                if not(self.clients[i] in self.recvPackets):
+                    self.sendPackets.append(self.clientsData[i].getData())
+                    
+test = server(SERVER_IP, SERVER_PORT)

@@ -74,7 +74,7 @@ class clashOfCards():
         print("<instance>Main menu has been launched.")
         self.runMainMenu()
 
-    #Cross playform get path method
+    #Cross platform get path method
     def getPath(self):
         path = __file__
         #Remove the file name

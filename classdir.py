@@ -1,5 +1,4 @@
 import pygame
-import pygame.gfxdraw
 import math
 
 #Menu objects
@@ -117,6 +116,7 @@ class player:
         self.x = 400
         self.y = 300
         self.velocity = 7
+        self.turnSpeed = self.velocity/50
         self.size = 30
         self.angle = 0
         self.red = red
@@ -136,6 +136,7 @@ class player:
     def setCommands(self, commandData):
         self.commandData = commandData
         self.velocity = commandData["Speed"]
+        self.turnSpeed = self.velocity/50
         self.damage = float(commandData["Str"])
 
         # Load abilitity cooldowns

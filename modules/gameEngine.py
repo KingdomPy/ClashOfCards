@@ -61,8 +61,10 @@ class engine:
 
                     if event.key == self.controls["A"]:
                         if self.selectedMove == 0:
-                            bullet = objects.bullet("surge", {}, (self.player.x,self.player.y,self.player.angle))
-                            self.projectiles.append(bullet)
+                            angle = self.player.angle + 0.12
+                            for i in range(3):
+                                bullet = objects.bullet("shotgun", {}, (self.player.x,self.player.y,angle-i*0.12))
+                                self.projectiles.append(bullet)
                         
         if not returnToMenu:
             if self.player != "":
@@ -83,16 +85,23 @@ class engine:
             #coordinates, name
             nearest_location = [-1, ""]
             while i < len(self.entities):
+                #Collision checker script
                 if not(self.entities[i].tag == "player"):
                     j = 0
                     while j < len(self.projectiles):
-                        bullet = ((self.projectiles[j].x,self.projectiles[j].y),self.projectiles[j].size)
-                        hasBeenHit = self.entities[i].collision(bullet[0],bullet[1])
-                        if not(hasBeenHit):
-                            j += 1
+                        x,y = self.projectiles[j].x,self.projectiles[j].y
+                        distance = math.sqrt((y-self.entities[i].y)**2+(x-self.entities[i].x)**2)
+                        #Will check if bullet is in the entity's sphere
+                        if distance <= self.entities[i].size:
+                            bullet = ((x,y),self.projectiles[j].size)
+                            hasBeenHit = self.entities[i].collision(bullet[0],bullet[1])
+                            if not(hasBeenHit):
+                                j += 1
+                            else:
+                                self.projectiles[j].hasHit()
+                                self.projectiles.pop(j)
                         else:
-                            self.projectiles[j].hasHit()
-                            self.projectiles.pop(j)
+                            j += 1
                 update = self.entities[i].update(((self.player.x,self.player.y),))
                 #0 = signal to delete the object
                 if update != 0:

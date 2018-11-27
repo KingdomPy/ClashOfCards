@@ -75,7 +75,7 @@ class entity:
         return (self.x,self.y),self.getImage(), self.colour
 
     def hitProcedure(self, damage):
-        print(self.name, "has taken", damage, "damage!")
+        pass
         
     def update(self, externalData = []):
         self.visualAngle += math.pi/800
@@ -143,26 +143,29 @@ class triangle(entity):
         for i in range(len(checks)):
             touching = distanceLinePoint((checks[i],checks[(i+1)%len(checks)]), bullet, size)
             if touching:
-                self.hp =- 2
+                self.hp -= 2
                 self.hitProcedure(2)
                 return True
     
     def update(self, externalData=[]):
-        #AI
-        if self.clock < 960:
-            self.moveForward()
-            self.moveForward()
-            self.rotate(-1)
-        elif self.clock < 1920:
-            self.rotate(1)
-            self.rotate(1)
-        elif self.clock < 2880:
-            self.moveForward()
-            self.moveForward()
-            self.rotate(1)
-            
-        self.clock += 16
-        self.clock %= 2880
+        if self.hp > 0:
+            #AI
+            if self.clock < 960:
+                self.moveForward()
+                self.moveForward()
+                self.rotate(-1)
+            elif self.clock < 1920:
+                self.rotate(1)
+                self.rotate(1)
+            elif self.clock < 2880:
+                self.moveForward()
+                self.moveForward()
+                self.rotate(1)
+                
+            self.clock += 16
+            self.clock %= 2880
+        else:
+            return 0
 
 class square(entity):
     def __init__(self, tag, stats, position=(0,0,0), size=30):
@@ -198,9 +201,6 @@ class square(entity):
                 self.hitProcedure(2)
                 return True
 
-    def hitProcedure(self, damage):
-        print(self.name, "has taken", damage, "damage!")
-
     def update(self, externalData=[]):
         if self.hp > 0:
             #AI
@@ -225,7 +225,6 @@ class square(entity):
             self.clock += 16
             self.clock %= 4800
         else:
-            print(self.name, "has been destroyed!")
             return 0
                                                        
 class player(entity):

@@ -136,8 +136,7 @@ class application:
         engine.addEntity("square", {"colour":(70,30,80)}, (0, 400, 0))
         engine.addEntity("square", {"colour":(80,30,80)}, (0, 600, math.pi))
         engine.addEntity("square", {"colour":(90,30,80)}, (0, 800, 0))
-        
-        
+           
         engine.addEntity("triangle", {"name":"Dummy-2","colour":(100,30,80)}, (300,-300,math.pi/4)) 
         engine.addEntity("triangle", {"colour":(110,30,80)}, (-300,-300,3*math.pi/4))
         engine.addEntity("triangle", {"colour":(120,30,80)}, (-300,300,5*math.pi/4))

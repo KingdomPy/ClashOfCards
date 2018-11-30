@@ -16,12 +16,12 @@ class display:
         self.width = dimensions[0]
         self.length = dimensions[1]
         path = getPath()
-        frame = path+"/assets/player/command_menu/frame.png"
-        frame_selected = path+"/assets/player/command_menu/frame_selected.png"
-        frame_shoot = path+"/assets/player/command_menu/frame_shoot.png"
-        self.frame = pygame.image.load(frame)
-        self.frame_selected = pygame.image.load(frame_selected)
-        self.frame_shoot = pygame.image.load(frame_shoot)
+        self.font = pygame.font.Font(path+"/assets/fonts/ability_Font.ttf", 18)
+        self.font2 = pygame.font.Font(path+"/assets/fonts/Kh2_Menu_Font.ttf", 12)
+        self.frame = pygame.image.load(path+"/assets/player/command_menu/frame.png")
+        self.frame_selected = pygame.image.load(path+"/assets/player/command_menu/frame_selected.png")
+        self.frame_shoot = pygame.image.load(path+"/assets/player/command_menu/frame_shoot.png")
+        self.hud = pygame.image.load(path+"/assets/player/command_menu/hud.png")
         if self.debug == True:
             self.colour = (0,0,0)
         else:
@@ -30,7 +30,15 @@ class display:
     def renderCMenu(self, commands=[], cooldowns=[], selected=1):
         x = 30
         y = self.length - 180
+        
         #Load sprites
+        "Command title"
+        self.surface.blit(self.hud, (x, y-31))
+        text = self.font2.render("COMMAND", True, (220,80,130))
+        sprite = pygame.Rect(x+14, y-24, 119, 29)
+        location = text.get_rect()
+        location.topleft = sprite.topleft
+        self.surface.blit(text, location)
         for i in range (0, 4):
             if i != selected:
                 self.surface.blit(self.frame, (x, y+36*i))
@@ -39,21 +47,20 @@ class display:
         else:
             image = self.frame_selected
         self.surface.blit(image, (x+12, y+36*selected))
-        font = pygame.font.Font(pygame.font.get_default_font(), 16)
+        
         #Load text
         for i in range(len(commands)):
             if i != selected:
-                text = font.render(commands[i], True, (255,255,255))
                 sprite = pygame.Rect(x+25, y+36*i+13, 119, 29)
-                location = text.get_rect()
-                location.topleft = sprite.topleft
-                self.surface.blit(text, location)
+                colour = (200,200,200)
+                
             else:
-                text = font.render(commands[i], True, (255,255,255))
                 sprite = pygame.Rect(x+37, y+36*i+13, 119, 29)
-                location = text.get_rect()
-                location.topleft = sprite.topleft
-                self.surface.blit(text, location)
+                colour = (255,255,255)
+            text = self.font.render(commands[i], True, colour)
+            location = text.get_rect()
+            location.topleft = sprite.topleft
+            self.surface.blit(text, location)
                 
     def renderHud(self, miniMapData):
         #Mana bar
@@ -67,14 +74,12 @@ class display:
         pygame.draw.polygon(self.surface, (63,237,47), points)
         pygame.draw.lines(self.surface,  self.colour, True, points, 2)
 
-        #Minimap Rect
-        #miniMapRect = (30,260,144,144)
+        #Mini Map
         miniMapRect = (self.width-174,30,144,144)
         borderWidth = 3
         clipRect = (miniMapRect[0]+borderWidth, miniMapRect[1]+borderWidth, miniMapRect[2]-borderWidth*2, miniMapRect[3]-borderWidth*2)
         xConstant = (miniMapRect[0]*2 + miniMapRect[2])/2
         yConstant = (miniMapRect[1]*2 + miniMapRect[3])/2
-        #Mini Map
         pygame.draw.rect(self.surface,  self.colour, miniMapRect, borderWidth)
         self.surface.set_clip(clipRect)
         #Dimensions of the map

@@ -59,12 +59,31 @@ class engine:
                     if event.key == self.controls["previous"]:
                         self.selectedMove = (self.selectedMove+1)%4
 
+                    if self.debug == True:
+                        if event.key == self.controls["pause"]:
+                            if self.player.commands[0] == "Surge":
+                                self.player.commands[0] = "Shotgun"
+                                
+                            elif self.player.commands[0] == "Shotgun":
+                                self.player.commands[0] = "Machine"
+
+                            elif self.player.commands[0] == "Machine":
+                                self.player.commands[0] = "Surge"
+
                     if event.key == self.controls["A"]:
                         if self.selectedMove == 0:
-                            angle = self.player.angle + 0.12
-                            for i in range(3):
-                                bullet = objects.bullet("shotgun", {}, (self.player.x,self.player.y,angle-i*0.12))
+                            
+                            angle = self.player.angle
+                            
+                            if self.player.commands[0] == "Surge":
+                                bullet = objects.bullet("surge", {}, (self.player.x,self.player.y,angle))
                                 self.projectiles.append(bullet)
+                                
+                            elif self.player.commands[0] == "Shotgun":
+                                angle += 0.12
+                                for i in range(3):
+                                    bullet = objects.bullet("shotgun", {}, (self.player.x,self.player.y,angle-i*0.12))
+                                    self.projectiles.append(bullet)
                         
         if not returnToMenu:
             if self.player != "":
@@ -132,7 +151,7 @@ class engine:
             #Pass data to camera
             miniMapData = self.camera.render(cameraData)
             #Pass hud data to hud
-            arguments = (self.selectedMove, miniMapData)
+            arguments = (self.player.commands,self.selectedMove, miniMapData)
             return arguments
         else:
             return 0

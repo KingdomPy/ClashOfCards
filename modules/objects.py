@@ -48,6 +48,12 @@ class entity:
         except:
             self.colour = (0,0,0)
 
+        #Command load
+        try:
+            self.commands = self.stats["commands"]
+        except:
+            self.commands = []
+
     def moveForward(self):
         self.x += self.speed*math.cos(self.angle)
         self.y += self.speed*math.sin(self.angle)
@@ -244,7 +250,10 @@ class player(entity):
 class bullet(entity):
     def __init__(self, tag, stats, position=(0,0,0), size=30):
         super().__init__(tag, stats, position, size)
-        self.speed = 10
+        if self.tag == "surge":
+            self.speed = 11
+        elif self.tag == "shotgun":
+            self.speed = 8
         self.size = 5
 
     def getImage(self):

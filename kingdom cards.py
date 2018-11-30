@@ -6,14 +6,18 @@ class application:
     def __init__(self):
         pygame.init()
         self.surface = pygame.display.set_mode((800, 600))
+        pygame.display.set_caption("Esl Pi: Kingdom Cards Test Build")
+        icon = pygame.image.load(self.getPath()+r"\assets\icon.png")
+        pygame.display.set_icon(icon)
         self.debug = False
         self.controls = {"up":pygame.K_w, "left":pygame.K_a, "right":pygame.K_d, "down":pygame.K_s, "A":pygame.K_j, "next":pygame.K_i, "previous":pygame.K_o, "pause":pygame.K_p}
 
         #Animated background test
-        fontPath = self.getPath()+r"\assets\fonts\Kh2_Menu_Font.ttf"
-        font = pygame.font.Font(fontPath, 24)
+        path = self.getPath()
+        logo = pygame.image.load(path+r"\assets\logo.png").convert()
+        font = pygame.font.Font(path+r"\assets\fonts\Kh2_Menu_Font.ttf", 24)
         self.bgAnimation = []
-        imgPath = self.getPath()+r"\assets\background\frame_"
+        imgPath = path+r"\assets\background\frame_"
         fileEnd = "_delay-0.03s.jpg"
         for i in range(164):
             self.surface.fill((0,0,0))
@@ -25,10 +29,20 @@ class application:
             self.bgAnimation.append(image)
             text = font.render(str(round(i*100/164, 1))+"%", True, (240,240,240))
             entry = text.get_rect()
-            entry.center = pygame.Rect(0,0,800,600).center
+            entry.bottomright= pygame.Rect(0,0,800,600).bottomright
             self.surface.blit(text, entry)
+            self.surface.blit(logo, (200,75))
             pygame.display.update()
-            
+
+        #Loading finished animation
+            self.surface.fill((0,0,0))
+        text = font.render("100%", True, (240,240,240))
+        entry = text.get_rect()
+        entry.bottomright= pygame.Rect(0,0,800,600).bottomright
+        self.surface.blit(text, entry)
+        self.surface.blit(logo, (200,75))
+        pygame.display.update()
+        pygame.time.delay(16)
         self.mainMenu()
 
     def mainMenu(self, mode=-1):
@@ -75,7 +89,6 @@ class application:
                          if mode == 0:
                              return self.adventureMode(self.debug)
                              
-                         
                     if event.key == self.controls["right"]:
                         DPAD.moveRight()
 
@@ -123,7 +136,7 @@ class application:
 
         #Entity parameters = tag, stats, position, size
         
-        engine.addEntity("player", {"colour":(0,50,0)}, (0,0,math.pi/2))
+        engine.addEntity("player", {"colour":(0,50,0), "commands":["Surge","Aura","Shield","Repair"]}, (0,0,math.pi/2))
         engine.addEntity("location", {"name":"Twilight Zone", "colour":(0,0,0)}, (0,0,0), 300)
         engine.addEntity("location", {"name":"Olympic City", "colour":(200,150,80)}, (0,-3000,0), 250)
         
@@ -147,7 +160,7 @@ class application:
             arguments = engine.update()
             if arguments == 0:
                 return self.mainMenu(0)
-            hud.update(["Surge", "Aura"], [], arguments[0], arguments[1])
+            hud.update(arguments[0], [], arguments[1], arguments[2])
     
     def getPath(self):
         path = __file__

@@ -10,7 +10,7 @@ class application:
         icon = pygame.image.load(self.getPath()+r"\assets\icon.png")
         pygame.display.set_icon(icon)
         self.debug = False
-        self.controls = {"up":pygame.K_w, "left":pygame.K_a, "right":pygame.K_d, "down":pygame.K_s, "A":pygame.K_j, "next":pygame.K_i, "previous":pygame.K_o, "pause":pygame.K_p}
+        self.controls = {"up":pygame.K_w, "left":pygame.K_a, "right":pygame.K_d, "down":pygame.K_s, "A":pygame.K_j, "B":pygame.K_k, "next":pygame.K_i, "previous":pygame.K_o, "pause":pygame.K_p}
 
         #Animated background test
         path = self.getPath()
@@ -35,7 +35,7 @@ class application:
             pygame.display.update()
 
         #Loading finished animation
-            self.surface.fill((0,0,0))
+        self.surface.fill((0,0,0))
         text = font.render("100%", True, (240,240,240))
         entry = text.get_rect()
         entry.bottomright= pygame.Rect(0,0,800,600).bottomright
@@ -45,7 +45,28 @@ class application:
         pygame.time.delay(16)
         self.mainMenu()
 
-    def mainMenu(self, mode=-1):
+    def transition(self):
+        tRect = pygame.Surface((800,600), pygame.SRCALPHA)
+        for i in range(75):
+            tRect.fill((0,0,0,i+1))
+            self.surface.blit(tRect, (0,0))
+            pygame.display.update()
+            pygame.time.delay(16)
+
+    def miniMenu(self, size):
+        #size should end at 24
+        i = size
+        width, length = (i+1)*26, (i+1)*18
+        tRect = pygame.Surface((width,length), pygame.SRCALPHA)
+        tRect.fill((0,0,0,110))
+        x, y = 400-width/2, 260-length/2
+        self.surface.blit(tRect, (x,y))
+
+        pygame.draw.rect(self.surface, (0,0,40), (x, y, width, length), round(10*(i/24)))
+        
+        pygame.display.update()
+
+    def mainMenu(self, cursorRow=-1):
         DPAD = cursor.cursor()
         DPAD.setTrack((["ADVENTURE", "VERSUS", "SETTINGS"],[" "]))
         #Transparent rectangle
@@ -58,17 +79,16 @@ class application:
         font = pygame.font.Font(fontPath, 18)
         text = font.render("Please move the DPAD to select", True, (9,24,102))
         text2 = font.render("a mode.", True, (9,24,102))
-        #Mode icons
-        "usel/sel = unselected/selected"
-        #uselV = tRect
-        #image = pygame.image.load(self.getPath()+r"\assets\main menu\versus_unselected.png")
-        #uselV.blit(image, (0,0))
         #Selected mode
-        DPAD.setCursor(mode, 0)
+        DPAD.setCursor(cursorRow, 0)
         location = DPAD.getCursor()
 
         #Animated background test
         cycle = 0
+        miniMenu = 24
+
+        #0 = selection, 1 = mini menu
+        instance = 0
         
         while True:
             self.surface.fill((255,255,255))
@@ -78,7 +98,10 @@ class application:
             self.surface.blit(self.bgAnimation[cycle], (0,0))
             cycle += 1
             cycle %= 164
-            
+
+            if miniMenu != 24:
+                miniMenu += 1
+                
             #Get inputs
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -86,34 +109,54 @@ class application:
 
                 if event.type == pygame.KEYDOWN:
                     if event.key == self.controls["A"]:
-                         if mode == 0:
+                         if mode == "ADVENTURE":
+                             self.transition()
                              return self.adventureMode(self.debug)
+                            
+                         elif mode == "SETTINGS":
+                             instance = 1
+                             miniMenu = 0
+                             text = font.render("Configure your options here", True, (9,24,102))
+                             DPAD.setCursor(-1, 0)
+                             DPAD.setTrack((["DEBUG"],["MUSIC"],["SFX"]))
+
+                    if event.key == self.controls["B"]:
+                        if instance == 1:
+                            instance = 0
+                            DPAD.setTrack((["ADVENTURE", "VERSUS", "SETTINGS"],[" "]))
+                            DPAD.setCursor(2, 0)
                              
                     if event.key == self.controls["right"]:
                         DPAD.moveRight()
 
                     if event.key == self.controls["left"]:
                          DPAD.moveLeft()
+
+                    if instance != 0:
+                        if event.key == self.controls["up"]:
+                            DPAD.moveUp()
+
+                        if event.key == self.controls["down"]:
+                             DPAD.moveDown()
                     
                     location = DPAD.getCursor()
-                    mode = location[0]
+                    cursorRow = location[0]
+                    mode = location[2]
                     
             #Draw screen
-            for i in range(3):
-                if i != mode:
-                    self.surface.blit(tRect, (60+240*i,90))
-                    if i == 1:
-                        #self.surface.blit(uselV, (60+240*i,90))
-                        pass
-
-                else:
-                    text = font.render(str(location[2]), True, (9,24,102))
-                    pygame.draw.rect(self.surface, (0,0,0), (60+240*i, 90, 190, 280))
-                    pygame.draw.rect(self.surface, (107,182,239), (60+240*i, 90, 190, 280), 10)
-                    #DPAD
-                    pygame.draw.rect(self.surface, (0,0,0), (130+240*i, 390, 50, 50))
-                    pygame.draw.rect(self.surface, (46,102,193), (135+240*i, 395, 40, 40))
-                    pygame.draw.rect(self.surface, (107,182,239), (142.5+240*i, 402.5, 27.5, 27.5))
+            if instance == 0:
+                for i in range(3):
+                    if i != cursorRow:
+                        self.surface.blit(tRect, (60+240*i,90))
+                        
+                    else:
+                        text = font.render(str(location[2]), True, (9,24,102))
+                        pygame.draw.rect(self.surface, (0,0,0), (60+240*i, 90, 190, 280))
+                        pygame.draw.rect(self.surface, (107,182,239), (60+240*i, 90, 190, 280), 10)
+                        #DPAD
+                        pygame.draw.rect(self.surface, (0,0,0), (130+240*i, 390, 50, 50))
+                        pygame.draw.rect(self.surface, (46,102,193), (135+240*i, 395, 40, 40))
+                        pygame.draw.rect(self.surface, (107,182,239), (142.5+240*i, 402.5, 27.5, 27.5))
 
             #Text box
             self.surface.blit(tTextRect, (100,500))
@@ -126,9 +169,12 @@ class application:
                 textEntry.topleft = (pygame.Rect(120, 540, 600, 100)).topleft
                 self.surface.blit(text2, textEntry)
             pygame.draw.rect(self.surface, (46,102,193), (100, 500, 600, 100), 7)
-            pygame.display.update()
 
-        
+            #Render a mini menu if needed
+            if instance == 1:
+                self.miniMenu(miniMenu)
+            
+            pygame.display.update()
 
     def adventureMode(self, debug=False):
         engine = gameEngine.engine(self.surface, (800,600), debug)

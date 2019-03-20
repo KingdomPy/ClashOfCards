@@ -1,3 +1,3 @@
 # ClashOfCards
 A raspberry pi game
-<br>Current test == kingdom cards.py
+<br>Current tests == kingdom cards.py, server tests/cs.py cOnline.py

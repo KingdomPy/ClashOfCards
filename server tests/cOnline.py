@@ -33,12 +33,15 @@ class multiplayerMenu:
 
         self.scrolly = 0
         self.limit = 0
-        self.room = "null"
+        self.target = -1 #The selected room
+        self.joinedRoom = -1
+        self.joinedRoomData = None
         
         clock = 0
         while True:
+            clicked = False
             self.surface.fill((80,100,120))
-            self.drawHud()
+            self.drawHud(self.joinedRoom)
 
             #Every half second reload room data
             if clock == 496:
@@ -47,29 +50,30 @@ class multiplayerMenu:
                 response = (self.tcpSocket.recv(2048)).decode()
 
                 if response == '"null"': #Checks if in a room
-                    self.room = "null"
                     request = '["GETROOMS"]'
                     self.tcpSocket.send(request.encode())
                     rooms = (self.tcpSocket.recv(2048)).decode()
                     rooms = json.loads(rooms)
 
                 else:
-                    self.room = response
-                    rooms = [{"ID":9999, "HOST":"JOINED SUCCESSFULLY", "MAP":"9999", "PLAYERS":[1]}]
+                    self.joinedRoomData = json.loads(response)
                 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.tcpSocket.close()
                     pygame.quit()
 
-                elif event.type == pygame.KEYDOWN:
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    clicked = True
+
+                '''elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         if self.room == "null":
                             request = '["JOINROOM", 1]'
                             self.tcpSocket.send(request.encode())
                             data = self.tcpSocket.recv(2048).decode()
                             if data[0] == "J":
-                                print(data)
+                                print(data)'''
                             
             keys = pygame.key.get_pressed()
             if keys[pygame.K_w]:
@@ -81,7 +85,17 @@ class multiplayerMenu:
                     self.scrolly -= 10
             
             box.render(self.surface)
-            self.drawRooms(rooms)
+            if self.joinedRoom == -1:
+                self.drawRooms(rooms)
+                if clicked == True:
+                    if not(self.target == -1):
+                        ID = self.rooms[self.target].ID
+                        request = json.dumps(["JOINROOM", ID])
+                        self.tcpSocket.send(request.encode())
+                        data = self.tcpSocket.recv(2048).decode()
+                        if data[0] == "J":
+                            self.joinedRoom = ID
+        
             #Frame
             pygame.draw.rect(self.surface, (9,24,102), (70,100,660,460), 7)
             pygame.display.update()
@@ -89,8 +103,13 @@ class multiplayerMenu:
             clock += 16
             clock %= 992
             
-    def drawHud(self):
-        #(46,102,193) light  blue, (9,24,102) dark blue colour codes
+    def drawHud(self, room):
+        "colour codes"
+        #(46,102,193) - light blue
+        #(35,77,145) - light blue 75% (blue)
+        #(23,51,97)  - light blue 50% (blue)
+        #(9,24,102) - dark blue
+        
         path = self.getPath()
         labelFont = pygame.font.Font(path+r"\assets\fonts\Kh2_Menu_Font.ttf", 16)
         textBoxFont = pygame.font.Font(path+r"\assets\fonts\OpenSans-Bold.ttf", 16)
@@ -99,33 +118,79 @@ class multiplayerMenu:
         pygame.draw.rect(self.surface, (46,102,193), (70,100,660,80))
         
         "Field text"
-        #ID | Host | Map | Players
-        text1 = labelFont.render("Id", True, (235,235,235))
-        text2 = labelFont.render("Host", True, (235,235,235))
-        text3 = labelFont.render("Map", True, (235,235,235))
-        text4 = labelFont.render("Players", True, (235,235,235))
+        if room == -1:
+            #ID | Host | Map | Players
+            text1 = labelFont.render("Id", True, (235,235,235))
+            text2 = labelFont.render("Host", True, (235,235,235))
+            text3 = labelFont.render("Map", True, (235,235,235))
+            text4 = labelFont.render("Players", True, (235,235,235))
 
-        box1 = text1.get_rect()
-        box1.center = pygame.Rect(10,113,220,50).center
-        box2 = text2.get_rect()
-        box2.center = pygame.Rect(175,113,220,50).center
-        box3 = text2.get_rect()
-        box3.center = pygame.Rect(340,113,220,50).center
-        box4 = text3.get_rect()
-        box4.center = pygame.Rect(505,113,220,50).center
+            box1 = text1.get_rect()
+            box1.center = pygame.Rect(10,113,200,50).center
+            box2 = text2.get_rect()
+            box2.center = pygame.Rect(175,113,200,50).center
+            box3 = text2.get_rect()
+            box3.center = pygame.Rect(340,113,200,50).center
+            box4 = text3.get_rect()
+            box4.center = pygame.Rect(505,113,200,50).center
+                
+            self.surface.blit(text1, box1)
+            self.surface.blit(text2, box2)
+            self.surface.blit(text3, box3)
+            self.surface.blit(text4, box4)
             
-        self.surface.blit(text1, box1)
-        self.surface.blit(text2, box2)
-        self.surface.blit(text3, box3)
-        self.surface.blit(text4, box4)
+        else:
+            if not(self.joinedRoomData):
+                clock = 496 #Skip to loading data
+                hostText = labelFont.render("LOADING", True, (235,235,235))
+            else:
+                hostText = labelFont.render(self.joinedRoomData["HOST"]+'S LOBBY', True, (235,235,235))
+                "#Box divider lines"
+                
+                #Information boxes
+                pygame.draw.rect(self.surface, (35,77,145), (70,440,660,120))
+                pygame.draw.rect(self.surface, (23,51,97), (70,410,660,30))
+
+                #Information dividor lines
+                pygame.draw.line(self.surface, (9,24,102), (70,440), (730,440), 4)
+                pygame.draw.line(self.surface, (9,24,102), (70,410), (730,410), 4)
+                
+                #Player dividor lines
+                pygame.draw.line(self.surface, (9,24,102), (235,180), (235,560), 4)
+                pygame.draw.line(self.surface, (9,24,102), (400,180), (400,560), 4)
+                pygame.draw.line(self.surface, (9,24,102), (565,180), (565,560), 4)
+
+                
+                
+                
+            hostBox = hostText.get_rect()
+            hostBox.center = pygame.Rect(360,113,80,50).center
+            self.surface.blit(hostText, hostBox)
         
         pygame.draw.line(self.surface, (9,24,102), (70,180), (730,180), 4)
 
     def drawRooms(self, rooms):
+        self.rooms = [] #clear the memory
         length = len(rooms)
+        x, y = pygame.mouse.get_pos()
+        self.target = -1
+
+        #Set clip boundary
+        surface.set_clip((70,183,660,377))
         for i in range(length):
-            gui.roomEntry(self.surface, rooms[i], 180+i*50, self.scrolly)
+            if x >= 70 and x <=730 and y >= 180+i*50+self.scrolly and y <= 230+i*50+self.scrolly:
+                touching = True
+                self.target = i
+                #top yellow line
+                pygame.draw.line(surface, (220,220,0), (70,183+i*50+self.scrolly), (730,183+i*50+self.scrolly), 1)
+            else:
+                touching = False  
+            self.rooms.append(gui.roomEntry(self.surface, rooms[i], 183+i*50+self.scrolly, touching)) #store room in the memory
+        surface.set_clip()
+        
         self.limit = 50 + -50 * length
+        if self.scrolly < self.limit:
+            self.scrolly = self.limit
     
     def getPath(self):
         path = __file__

@@ -36,6 +36,13 @@ class server:
         self.roomsData.append(privateData)
         print(publicData["HOST"], privateData["HOST"], "created room with ID:", ID)
 
+    def findRoom(self, ID):
+        #Find room by ID
+        for i in range(len(self.rooms)):
+            if self.rooms[i]["ID"] == ID:
+                return i
+        return -1
+
     def tcp_thread(self):
         while True:
             #client, address
@@ -66,15 +73,9 @@ class server:
                         #If not in a room
                         if self.clientsData[dataLocation]["ROOM"] == "null":
                             #Search for the room, -1 = False (or else it will clash with 0)
-                            found = -1
-                            for i in range(len(self.rooms)):
-                                #Room found by host name
-                                if self.rooms[i]["ID"] == data[1]:
-                                    found = i
-                                    break
-                                
+                            found = self.findRoom(data[1])
                             if found != -1:
-                                self.clientsData[dataLocation]["ROOM"] = found
+                                self.clientsData[dataLocation]["ROOM"] = data[1]
                                 self.rooms[found]["PLAYERS"].append(self.clientsData[dataLocation]["NAME"])
                                 self.roomsData[found]["PLAYERS"].append(client[1])
                                 print(self.clientsData[dataLocation]["NAME"], client[1], "has joined the host:", self.rooms[found]["HOST"], self.roomsData[found]["HOST"])
@@ -93,7 +94,14 @@ class server:
                         report = json.dumps(self.rooms)
 
                     elif data[0] == "GETSTATUS":
-                        report = json.dumps(self.clientsData[dataLocation]["ROOM"])
+                        ID = self.clientsData[dataLocation]["ROOM"]
+                        request = "null"
+                        #Search for the room
+                        if not(ID  == "null"):
+                            found = self.findRoom(ID)
+                            if found > -1:
+                                request = self.rooms[found]
+                        report = json.dumps(request)
 
                     #Request not found   
                     else:
@@ -114,8 +122,9 @@ class server:
         if roomSlot != "null":
             name = self.clientsData[dataLocation]["NAME"]
             try: #Allows player to be fully removed even if they have been kicked from the room
-                self.rooms[roomSlot]["PLAYERS"].remove(name)
-                self.roomsData[roomSlot]["PLAYERS"].remove(client[1])
+                room = self.findRoom(roomSlot)
+                self.rooms[room]["PLAYERS"].remove(name)
+                self.roomsData[room]["PLAYERS"].remove(client[1])
             except:
                 pass
         self.clients.pop(dataLocation)

@@ -4,7 +4,7 @@ import socket,json
 import guiClasses as gui
 
 #Networking config
-SERVER_IP = "192.168.0.7"
+SERVER_IP = "10.175.17.64"
 SERVER_PORT = 8080
 
 class multiplayerMenu:
@@ -160,8 +160,12 @@ class multiplayerMenu:
                 pygame.draw.line(self.surface, (9,24,102), (400,180), (400,560), 4)
                 pygame.draw.line(self.surface, (9,24,102), (565,180), (565,560), 4)
 
-                
-                
+                players = self.joinedRoomData["PLAYERS"]
+                for i in range(len(players)):
+                    playerName = textBoxFont.render(players[i], True, (220,220,220))
+                    playerNameBox = playerName.get_rect()
+                    playerNameBox.center = pygame.Rect(70+i*165,410,165,30).center
+                    self.surface.blit(playerName, playerNameBox)
                 
             hostBox = hostText.get_rect()
             hostBox.center = pygame.Rect(360,113,80,50).center

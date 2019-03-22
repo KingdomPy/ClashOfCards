@@ -75,11 +75,14 @@ class server:
                             #Search for the room, -1 = False (or else it will clash with 0)
                             found = self.findRoom(data[1])
                             if found != -1:
-                                self.clientsData[dataLocation]["ROOM"] = data[1]
-                                self.rooms[found]["PLAYERS"].append(self.clientsData[dataLocation]["NAME"])
-                                self.roomsData[found]["PLAYERS"].append(client[1])
-                                print(self.clientsData[dataLocation]["NAME"], client[1], "has joined the host:", self.rooms[found]["HOST"], self.roomsData[found]["HOST"])
-                                report = "JOINROOM: {}".format(data[1])
+                                if len(self.rooms[found]["PLAYERS"]) < 4:
+                                    self.clientsData[dataLocation]["ROOM"] = data[1]
+                                    self.rooms[found]["PLAYERS"].append(self.clientsData[dataLocation]["NAME"])
+                                    self.roomsData[found]["PLAYERS"].append(client[1])
+                                    print(self.clientsData[dataLocation]["NAME"], client[1], "has joined the host:", self.rooms[found]["HOST"], self.roomsData[found]["HOST"])
+                                    report = "JOINROOM: {}".format(data[1])
+                                else:
+                                    report = "ROOM FULL"
                             else:
                                 report == "JOINROOM: {} not found.".format(data[1])
                         else:
@@ -91,7 +94,12 @@ class server:
                         report = request
 
                     elif data[0] == "GETROOMS":
-                        report = json.dumps(self.rooms)
+                        report = []
+                        #Don't show full rooms
+                        for i in range(len(self.rooms)):
+                            if len(self.rooms[i]["PLAYERS"]) < 4:
+                                report.append(self.rooms[i])
+                        report = json.dumps(report)
 
                     elif data[0] == "GETSTATUS":
                         ID = self.clientsData[dataLocation]["ROOM"]

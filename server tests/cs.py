@@ -13,7 +13,9 @@ class server:
         self.rooms = []
         self.roomsData = []
         for i in range(12):
-            self.addRoom({"HOST": "killerjack1234", "MAP": "Deep Space", "PLAYERS": ["killerjack1234"]}, {"HOST":("192.168.0.7", 8080), "PLAYERS": [("192.168.0.7", 8080)]})
+            self.addRoom({"HOST": "killerjack1234", "MAP": "Deep Space", "PLAYERS": [["killerjack1234",1]]},
+                         {"HOST":("192.168.0.7", 8080), "PLAYERS": [("192.168.0.7", 8080)]}
+                         )
         
         #Data on addresses connected
         self.clientsData = []
@@ -77,7 +79,7 @@ class server:
                             if found != -1:
                                 if len(self.rooms[found]["PLAYERS"]) < 4:
                                     self.clientsData[dataLocation]["ROOM"] = data[1]
-                                    self.rooms[found]["PLAYERS"].append(self.clientsData[dataLocation]["NAME"])
+                                    self.rooms[found]["PLAYERS"].append([self.clientsData[dataLocation]["NAME"],0])
                                     self.roomsData[found]["PLAYERS"].append(client[1])
                                     print(self.clientsData[dataLocation]["NAME"], client[1], "has joined the host:", self.rooms[found]["HOST"], self.roomsData[found]["HOST"])
                                     report = "JOINROOM: {}".format(data[1])
@@ -87,6 +89,24 @@ class server:
                                 report == "JOINROOM: {} not found.".format(data[1])
                         else:
                             report == "JOINROOM: {} failed, already in a room.".format(data[1])
+
+                    elif data[0] == "TOGGLEREADY":
+                        if self.clientsData[dataLocation]["ROOM"] == "null":
+                            report = "NOT IN A ROOM"
+                        else:
+                            roomSlot = self.findRoom(self.clientsData[dataLocation]["ROOM"])
+                            index = self.roomsData[roomSlot]["PLAYERS"].index(client[1])
+                            #Toggle 1 to 0 and 0 to 1
+                            self.rooms[roomSlot]["PLAYERS"][index][1] = 1 - self.rooms[roomSlot]["PLAYERS"][index][1]
+                            report = "TOGGLED"
+
+                    elif data[0] == "ADDROOM":
+                        if self.clientsData[dataLocation]["ROOM"] == "null":
+                            host = self.clientsData[dataLocation]["NAME"]
+                            publicData = {"HOST": host, "MAP": data[1], "PLAYERS": [[host,0]]}
+                            privateData = {"HOST": client[1], "PLAYERS": [client[1]]}
+                            self.addRoom(publicData, privateData)
+                            self.clientsData[dataLocation]["ROOM"] = self.rooms[len(self.rooms)-1]["ID"]
                         
                     #Get requests
                     elif data[0] == "GETNAME":
@@ -103,13 +123,13 @@ class server:
 
                     elif data[0] == "GETSTATUS":
                         ID = self.clientsData[dataLocation]["ROOM"]
-                        request = "null"
+                        request = "NULL"
                         #Search for the room
                         if not(ID  == "null"):
                             found = self.findRoom(ID)
                             if found > -1:
-                                request = self.rooms[found]
-                        report = json.dumps(request)
+                                request = json.dumps(self.rooms[found])
+                        report = request
 
                     #Request not found   
                     else:
@@ -131,8 +151,10 @@ class server:
             name = self.clientsData[dataLocation]["NAME"]
             try: #Allows player to be fully removed even if they have been kicked from the room
                 room = self.findRoom(roomSlot)
-                self.rooms[room]["PLAYERS"].remove(name)
-                self.roomsData[room]["PLAYERS"].remove(client[1])
+                for i in range(4):
+                    if self.rooms[room]["PLAYERS"][i][0] == name:
+                        self.rooms[room]["PLAYERS"].pop(i)
+                        self.roomsData[room]["PLAYERS"].remove(client[1])
             except:
                 pass
         self.clients.pop(dataLocation)

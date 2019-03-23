@@ -4,7 +4,7 @@ import socket,json
 import guiClasses as gui
 
 #Networking config
-SERVER_IP = "10.175.17.64"
+SERVER_IP = "192.168.0.7"
 SERVER_PORT = 8080
 
 class multiplayerMenu:
@@ -14,21 +14,24 @@ class multiplayerMenu:
         #Networking socket
         self.tcpSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.tcpSocket.connect(server)
-        request = '["SETNAME", "Nathan"]'
+        request = '["ADDROOM", "Twightlight Town"]'
         self.tcpSocket.send(request.encode())
         self.tcpSocket.recv(128)
+
+        #Fonts
+        path = self.getPath()
+        self.labelFont = pygame.font.Font(path+r"\assets\fonts\Kh2_Menu_Font.ttf", 16)
+        self.textBoxFont = pygame.font.Font(path+r"\assets\fonts\OpenSans-Bold.ttf", 16)
+        self.defaultFont = pygame.font.Font(path+r"\assets\fonts\TitilliumWeb-Regular.ttf", 18)
         
         self.surface = surface
         self.main()
 
     def main(self):
-        path = self.getPath()
-        labelFont = pygame.font.Font(path+r"\assets\fonts\Kh2_Menu_Font.ttf", 22)
-        textBoxFont = pygame.font.Font(path+r"\assets\fonts\OpenSans-Bold.ttf", 16)
         request = '["GETNAME"]'
         self.tcpSocket.send(request.encode())
         username = self.tcpSocket.recv(128).decode()
-        box = gui.textBox(username, (46,102,193), textBoxFont, (140,50), (190,25))
+        box = gui.textBox(username, (46,102,193), self.textBoxFont, (140,50), (190,25))
         rooms = [{"ID":0, "HOST":"Fetching...", "MAP":"Loading...", "PLAYERS":[]}]
 
         self.scrolly = 0
@@ -43,20 +46,20 @@ class multiplayerMenu:
             self.surface.fill((80,100,120))
             self.drawHud(self.joinedRoom)
 
-            #Every half second reload room data
-            if clock == 496:
-                request = '["GETSTATUS"]'
+            #Request data from the server
+            request = '["GETSTATUS"]'
+            self.tcpSocket.send(request.encode())
+            response = (self.tcpSocket.recv(2048)).decode()
+
+            if response == "NULL": #Checks if in a room, null = not in a room
+                request = '["GETROOMS"]'
                 self.tcpSocket.send(request.encode())
-                response = (self.tcpSocket.recv(2048)).decode()
+                rooms = (self.tcpSocket.recv(2048)).decode()
+                rooms = json.loads(rooms)
 
-                if response == '"null"': #Checks if in a room
-                    request = '["GETROOMS"]'
-                    self.tcpSocket.send(request.encode())
-                    rooms = (self.tcpSocket.recv(2048)).decode()
-                    rooms = json.loads(rooms)
-
-                else:
-                    self.joinedRoomData = json.loads(response)
+            else:
+                self.joinedRoomData = json.loads(response)
+                self.joinedRoom = self.joinedRoomData["ID"] #Make player join room if they created it
                 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -85,6 +88,8 @@ class multiplayerMenu:
                     self.scrolly -= 10
             
             box.render(self.surface)
+            
+            #Handle different instance inputs and outputs
             if self.joinedRoom == -1:
                 self.drawRooms(rooms)
                 if clicked == True:
@@ -95,6 +100,12 @@ class multiplayerMenu:
                         data = self.tcpSocket.recv(2048).decode()
                         if data[0] == "J":
                             self.joinedRoom = ID
+
+            else:
+                if clicked == True:
+                    request = '["TOGGLEREADY"]'
+                    self.tcpSocket.send(request.encode())
+                    data = self.tcpSocket.recv(2048).decode()
         
             #Frame
             pygame.draw.rect(self.surface, (9,24,102), (70,100,660,460), 7)
@@ -110,20 +121,16 @@ class multiplayerMenu:
         #(23,51,97)  - light blue 50% (blue)
         #(9,24,102) - dark blue
         
-        path = self.getPath()
-        labelFont = pygame.font.Font(path+r"\assets\fonts\Kh2_Menu_Font.ttf", 16)
-        textBoxFont = pygame.font.Font(path+r"\assets\fonts\OpenSans-Bold.ttf", 16)
-        
         "Field box"
         pygame.draw.rect(self.surface, (46,102,193), (70,100,660,80))
         
         "Field text"
         if room == -1:
             #ID | Host | Map | Players
-            text1 = labelFont.render("Id", True, (235,235,235))
-            text2 = labelFont.render("Host", True, (235,235,235))
-            text3 = labelFont.render("Map", True, (235,235,235))
-            text4 = labelFont.render("Players", True, (235,235,235))
+            text1 = self.labelFont.render("Id", True, (235,235,235))
+            text2 = self.labelFont.render("Host", True, (235,235,235))
+            text3 = self.labelFont.render("Map", True, (235,235,235))
+            text4 = self.labelFont.render("Players", True, (235,235,235))
 
             box1 = text1.get_rect()
             box1.center = pygame.Rect(10,113,200,50).center
@@ -141,10 +148,10 @@ class multiplayerMenu:
             
         else:
             if not(self.joinedRoomData):
-                clock = 496 #Skip to loading data
-                hostText = labelFont.render("LOADING", True, (235,235,235))
+                clock = 249 #Skip to loading data
+                hostText = self.labelFont.render("LOADING", True, (235,235,235))
             else:
-                hostText = labelFont.render(self.joinedRoomData["HOST"]+'S LOBBY', True, (235,235,235))
+                hostText = self.labelFont.render(self.joinedRoomData["HOST"]+'S LOBBY', True, (235,235,235))
                 "#Box divider lines"
                 
                 #Information boxes
@@ -162,10 +169,16 @@ class multiplayerMenu:
 
                 players = self.joinedRoomData["PLAYERS"]
                 for i in range(len(players)):
-                    playerName = textBoxFont.render(players[i], True, (220,220,220))
+                    playerName = self.defaultFont.render(players[i][0], True, (220,220,220))
                     playerNameBox = playerName.get_rect()
                     playerNameBox.center = pygame.Rect(70+i*165,410,165,30).center
                     self.surface.blit(playerName, playerNameBox)
+
+                    #If the player is not ready
+                    if players[i][1] == 0:
+                        tRect = pygame.Surface((165,380), pygame.SRCALPHA)
+                        tRect.fill((0,0,0,50))
+                        surface.blit(tRect, (70+i*165,180))
                 
             hostBox = hostText.get_rect()
             hostBox.center = pygame.Rect(360,113,80,50).center
